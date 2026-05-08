@@ -71,7 +71,9 @@ kubectl delete pod nginx -n nginx
 ### Deployments
 ```bash
 kubectl apply -f deployment.yml
-kubectl scale deployment/nginx-deployment -n nginx --replicas=8
+kubectl get pods -n nginx -o wide                                          # extra details (node, IP)
+kubectl scale deployment/nginx-deployment -n nginx --replicas=8           # scale up/down
+kubectl set image deployment/nginx-deployment nginx=nginx:1.27 -n nginx   # rolling image update
 ```
 
 ---
@@ -135,3 +137,5 @@ spec:
 - `kubectl get pods -A` → see everything across all namespaces
 - `kubectl describe` → debug pod issues (events, errors)
 - `kubectl exec -it` → shell into a running container
+- `kubectl get pods -o wide` → shows Pod IP and which Node it's running on
+- `kubectl set image` → triggers a rolling update (zero-downtime image change)
