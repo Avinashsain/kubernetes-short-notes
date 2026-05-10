@@ -619,3 +619,136 @@ kubectl describe nodes | grep -A5 Taints
 # Specific node
 kubectl describe node avi-cluster-worker | grep Taint
 ```
+
+
+# Metrics Server & kubectl top — Kubernetes Short Notes
+
+## What is Metrics Server?
+
+Metrics Server is a **cluster-wide resource usage aggregator** — collects CPU and memory metrics from kubelets on each node and exposes them via the Kubernetes API.
+
+---
+
+## What It Enables
+
+| Feature | Command |
+|---|---|
+| Pod CPU/memory usage | `kubectl top pod` |
+| Node CPU/memory usage | `kubectl top node` |
+| Horizontal Pod Autoscaler (HPA) | Requires metrics server |
+| Vertical Pod Autoscaler (VPA) | Requires metrics server |
+
+---
+
+## Installation
+
+```bash
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+```
+
+---
+
+## Common Issue on `kind` Clusters — TLS Error
+
+```
+x509: cannot validate certificate for node IP
+```
+
+### Fix — Add `--kubelet-insecure-tls` flag
+
+```bash
+kubectl patch deployment metrics-server \
+  -n kube-system \
+  --type=json \
+  -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]'
+```
+
+---
+
+## Common Issue — Pods Stuck in Pending
+
+If nodes have taints, metrics-server pods can't schedule. Fix by adding tolerations:
+
+```bash
+kubectl patch deployment metrics-server \
+  -n kube-system \
+  --type=json \
+  -p='[
+    {"op":"add","path":"/spec/template/spec/tolerations","value":[
+      {"key":"prod","operator":"Equal","value":"true","effect":"NoSchedule"},
+      {"key":"node-role.kubernetes.io/control-plane","operator":"Exists","effect":"NoSchedule"}
+    ]}
+  ]'
+```
+
+---
+
+## Verify Installation
+
+```bash
+kubectl get pods -n kube-system | grep metrics-server
+# Should show Running, not Pending
+```
+
+---
+
+## kubectl top Commands
+
+```bash
+kubectl top nodes                        # node level CPU + memory
+kubectl top pods                         # pods in default namespace
+kubectl top pods -n notes-app           # pods in specific namespace
+kubectl top pods -A                      # ALL pods across all namespaces
+kubectl top pods --sort-by=cpu -A       # sort by CPU usage
+kubectl top pods --sort-by=memory -A    # sort by memory usage
+```
+
+---
+
+## Understanding the Output
+
+```
+NAME                        CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)
+avi-cluster-control-plane   113m         1%       839Mi           10%
+avi-cluster-worker          22m          0%       213Mi           2%
+```
+
+| Field | Meaning |
+|---|---|
+| `113m` | 113 millicores = 0.113 of 1 CPU core |
+| `CPU(%)` | % of total CPU on that node |
+| `839Mi` | Memory in Mebibytes |
+| `MEMORY(%)` | % of total RAM on that node |
+
+---
+
+## kube-system Pod Roles
+
+| Pod | Role |
+|---|---|
+| `kube-apiserver` | Handles all API requests — always heaviest |
+| `etcd` | Database — stores all cluster state |
+| `kube-controller-manager` | Manages deployments, replicasets |
+| `kube-scheduler` | Decides which node pods go to |
+| `coredns` | DNS resolution inside cluster |
+| `kindnet` | Network plugin — one per node |
+| `kube-proxy` | Network rules — one per node |
+| `metrics-server` | Collects CPU/memory metrics |
+| `local-path-provisioner` | Manages local storage (kind only) |
+
+> `kube-apiserver` is always the heaviest — every `kubectl` command hits it.
+
+---
+
+## Quick Troubleshooting
+
+```bash
+# Metrics API not available?
+kubectl get pods -n kube-system | grep metrics-server   # check if Running
+
+# Pod stuck in Pending?
+kubectl describe pod <metrics-server-pod> -n kube-system  # check Events
+
+# No resources found?
+kubectl top pods -A   # you may be in wrong namespace
+```
