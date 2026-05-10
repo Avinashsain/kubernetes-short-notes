@@ -2,11 +2,11 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: notes-app-deployment
-  namespace: notes-app
+  namespace: nginx
   labels:
     app: notes-app
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: notes-app
@@ -20,3 +20,10 @@ spec:
         image: avinashsain65/notes-app-k8s
         ports:
         - containerPort: 80
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "250m"
+            memory: "256Mi"
