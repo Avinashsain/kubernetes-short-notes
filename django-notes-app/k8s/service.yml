@@ -2,7 +2,10 @@ apiVersion: v1
 kind: Service
 metadata:
   name: notes-app-service
-  namespace: nginx
+  #namespace: nginx
+  namespace: notes-app
+  labels:
+    app: notes-app
 spec:
   selector:
     app: notes-app

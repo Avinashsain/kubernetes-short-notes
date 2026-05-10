@@ -2,7 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: notes-app-deployment
-  namespace: nginx
+  #namespace: nginx
+  namespace: notes-app
   labels:
     app: notes-app
 spec:
@@ -16,14 +17,31 @@ spec:
         app: notes-app
     spec:
       containers:
-      - name: notes-app
-        image: avinashsain65/notes-app-k8s
-        ports:
-        - containerPort: 80
-        resources:
-          requests:
-            cpu: "100m"
-            memory: "128Mi"
-          limits:
-            cpu: "250m"
-            memory: "256Mi"
+        - name: notes-app
+          image: avinashsain65/notes-app-k8s:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 1
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 1
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
