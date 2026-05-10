@@ -486,3 +486,136 @@ kubectl port-forward service/nginx-service -n nginx 80:80 --address=0.0.0.0
 | **PVC `storageClassName` must match PV** | Or binding will stay `Pending` |
 | **`kubectl rollout undo`** | Your best friend after a bad deploy |
 | **`kubectl get endpoints`** | Empty = selector labels don't match any pod |
+
+
+# Taints & Tolerations — Kubernetes Short Notes
+
+## What & Why
+
+- **Taint** → applied on a **Node** — repels pods
+- **Toleration** → applied on a **Pod** — allows it to schedule on tainted nodes
+- Together they control **which pods can run on which nodes**
+
+---
+
+## Taint Syntax
+
+```bash
+kubectl taint node <node-name> key=value:effect
+```
+
+```bash
+# Add taint
+kubectl taint node avi-cluster-worker prod=true:NoSchedule
+
+# Remove taint (trailing -)
+kubectl taint node avi-cluster-worker prod=true:NoSchedule-
+```
+
+---
+
+## 3 Taint Effects
+
+| Effect | Behaviour |
+|---|---|
+| `NoSchedule` | Pod won't schedule on node unless it tolerates |
+| `PreferNoSchedule` | Tries to avoid, but not guaranteed |
+| `NoExecute` | Evicts running pods + blocks new ones |
+
+---
+
+## Toleration Syntax (in Pod spec)
+
+```yaml
+tolerations:
+- key: "prod"
+  operator: "Equal"    # Equal = match key+value
+  value: "true"
+  effect: "NoSchedule"
+```
+
+### Operator Types
+
+| Operator | Meaning |
+|---|---|
+| `Equal` | key + value + effect must match |
+| `Exists` | only key needs to match, no value needed |
+
+```yaml
+# Exists example — tolerates any value for that key
+tolerations:
+- key: "prod"
+  operator: "Exists"
+  effect: "NoSchedule"
+```
+
+---
+
+## Tolerate Everything (not recommended)
+
+```yaml
+tolerations:
+- operator: "Exists"   # tolerates ALL taints on any node
+```
+
+---
+
+## Quick Flow
+
+```
+Node has Taint  →  Pod without toleration = BLOCKED
+Node has Taint  →  Pod with matching toleration = ALLOWED
+```
+
+---
+
+## Real World Use Cases
+
+| Taint | Purpose |
+|---|---|
+| `env=prod:NoSchedule` | Only prod pods on prod nodes |
+| `gpu=true:NoSchedule` | Only GPU workloads on GPU nodes |
+| `team=backend:NoSchedule` | Isolate team workloads |
+| `node.kubernetes.io/not-ready:NoExecute` | Kubernetes system taint |
+
+---
+
+## Important Notes
+
+- Taints & tolerations don't **attract** pods to nodes — use **NodeSelector** or **NodeAffinity** for that
+- Control-plane has a default taint — that's why regular pods don't run on it
+- `NoExecute` with `tolerationSeconds` evicts pods after a timeout:
+
+```yaml
+tolerations:
+- key: "prod"
+  operator: "Equal"
+  value: "true"
+  effect: "NoExecute"
+  tolerationSeconds: 300   # evict after 5 mins
+```
+
+---
+
+## Common Mistakes
+
+| Mistake | Fix |
+|---|---|
+| `key:value:effect` | Use `key=value:effect` |
+| Typo in effect (`NoSchule`) | Must be exactly `NoSchedule` |
+| Taint key mismatch (node vs pod) | Key + value + effect must match exactly |
+| Wrong indentation in YAML | All toleration fields must align under `key` |
+
+---
+
+## List Taints on All Nodes
+
+```bash
+kubectl get nodes -o custom-columns=NAME:.metadata.name,TAINTS:.spec.taints
+
+# Or detailed
+kubectl describe nodes | grep -A5 Taints
+
+# Specific node
+kubectl describe node avi-cluster-worker | grep Taint
+```
