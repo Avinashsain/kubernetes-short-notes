@@ -4,7 +4,7 @@ metadata:
   name: nginx-deployment
   namespace: nginx
 spec:
-  replicas: 1
+  replicas: 5
   selector:
     matchLabels:
       app: nginx
@@ -26,7 +26,7 @@ spec:
             cpu: "250m"
             memory: "256Mi"
         volumeMounts:
-        - mountPath: /var/www/html
+        - mountPath: /usr/share/nginx/html
           name: my-volume
       volumes:
       - name: my-volume
