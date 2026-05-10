@@ -1,0 +1,9 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: mysql-config-map
+  namespace: mysql
+data:
+  DEFAULT_USER: "root"
+  DEFAULT_PASSWORD: "root"
+  DEFAULT_DATABASE: "devopsdb"
