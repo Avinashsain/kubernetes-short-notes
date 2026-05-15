@@ -1,0 +1,76 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: devopsbatches.devopsbatches.com
+spec:
+  group: devopsbatches.com
+  names:
+    kind: DevOpsBatch
+    plural: devopsbatches
+    singular: devopsbatch
+    shortNames:
+      - dbatch
+  scope: Namespaced
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            apiVersion:
+              type: string
+            kind:
+              type: string
+            metadata:
+              type: object
+            spec:
+              type: object
+              required:
+                - name
+                - duration
+                - model
+                - platform
+              properties:
+                name:
+                  type: string
+                  description: "Name of the DevOps batch"
+                duration:
+                  type: integer
+                  description: "Duration of the DevOps batch in minutes"
+                model:
+                  type: string
+                  description: "Model used for the DevOps batch"
+                platform:
+                  type: string
+                  description: "Platform for the DevOps batch"
+                resourceConfig:
+                  type: object
+                  properties:
+                    cpu:
+                      type: string
+                      description: "CPU resource request"
+                    memory:
+                      type: string
+                      description: "Memory resource request"
+                    gpu:
+                      type: string
+                      description: "GPU resource request"
+                tolerations:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      key:
+                        type: string
+                        description: "Toleration key"
+                      operator:
+                        type: string
+                        description: "Toleration operator"
+                      value:
+                        type: string
+                        description: "Toleration value"
+                      effect:
+                        type: string
+                        description: "Toleration effect"

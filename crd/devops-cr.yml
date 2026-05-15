@@ -1,0 +1,18 @@
+apiVersion: devopsbatches.com/v1
+kind: DevOpsBatch
+metadata:
+  name: herovired-devops-batch-15
+spec:
+  name: "Herovired DevOps Batch 15"
+  duration: 120
+  model: "Online"
+  platform: "Kubernetes"
+  resourceConfig:
+    cpu: "500m"
+    memory: "512Mi"
+    gpu: "1"
+  tolerations:
+    - key: "prod"
+      operator: "Equal"
+      value: "true"
+      effect: "NoSchedule"
